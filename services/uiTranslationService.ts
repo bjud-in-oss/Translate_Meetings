@@ -7,7 +7,7 @@ const SWEDISH_UI_TEXT: UIText = {
   dashboard: {
     yourLanguageLabel: "Vilket är ditt språk?",
     modeLabel: "När ska tolken prata?",
-    modeSimultaneous: "Simultan (Multi-Duplex)",
+    modeSimultaneous: "Simultan",
     modeTakeTurns: "Turas om att prata",
     tempoLabel: "Tempo & Stil",
     tempoStandard: "Standard",

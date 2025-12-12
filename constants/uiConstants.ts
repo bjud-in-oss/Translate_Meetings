@@ -5,7 +5,7 @@ export const DEFAULT_UI_TEXT: UIText = {
   dashboard: {
     yourLanguageLabel: "What is your language?",
     modeLabel: "When should the translator talk?",
-    modeSimultaneous: "Simultan (Multi-Duplex)",
+    modeSimultaneous: "Talk immediately",
     modeTakeTurns: "Take turns talking",
     tempoLabel: "Tempo & Style",
     tempoStandard: "Standard",
@@ -40,7 +40,7 @@ export const DEFAULT_UI_TEXT: UIText = {
     subOptionSequential: "Sequential",
     subOptionFluid: "Fluid",
     subOptionPresentation: "Presentation",
-    categorySimultaneousTitle: "Simultaneous",
+    categorySimultaneousTitle: "Talk immediately",
     categorySimultaneousDesc: "Translate while listening.",
     subOptionAudio: "Audio",
     subOptionText: "Text",
