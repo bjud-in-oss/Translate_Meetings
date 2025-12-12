@@ -10,13 +10,7 @@ export class GeminiLiveService {
   private isConnecting: boolean = false;
   
   constructor() {
-    // Support both Vite env (Netlify) and process.env (AI Studio)
-    const apiKey = process.env.API_KEY;
-    
-    if (!apiKey) {
-        console.error("MISSING API KEY");
-    }
-    this.ai = new GoogleGenAI({ apiKey: apiKey as string });
+    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   async connect(

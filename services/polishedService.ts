@@ -46,11 +46,7 @@ export class PolishedService {
   private readonly COOLDOWN_MS = 2000;
 
   constructor() {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-        console.error("MISSING API KEY.");
-    }
-    this.ai = new GoogleGenAI({ apiKey: apiKey as string });
+    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   async start(
