@@ -64,7 +64,7 @@ export function float32To16BitPCM(float32Arr: Float32Array): Int16Array {
 export function createPcmBlob(data: Float32Array): Blob {
   const int16 = float32To16BitPCM(data);
   return {
-    data: arrayBufferToBase64(int16.buffer),
+    data: arrayBufferToBase64(int16.buffer as ArrayBuffer),
     mimeType: 'audio/pcm;rate=16000',
   };
 }
