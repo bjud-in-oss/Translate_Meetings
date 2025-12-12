@@ -56,7 +56,8 @@ const ActiveSessionStep: React.FC<ActiveSessionStepProps> = ({
   totalLag,
   lagTrend,
   onEndSession,
-  showDebug
+  showDebug,
+  analyser
 }) => {
   
   // Performance & Normalization Logic:
@@ -116,6 +117,7 @@ const ActiveSessionStep: React.FC<ActiveSessionStepProps> = ({
                         totalLag={totalLag}
                         lagTrend={lagTrend}
                         onTogglePause={togglePause}
+                        analyser={analyser} // Pass Analyser
                     />
                 </div>
             ) : (

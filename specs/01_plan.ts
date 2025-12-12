@@ -225,10 +225,19 @@ Men du kan spara två hela versioner av varje fil. Tidigare versionen och den ä
 >     - Byt "Simultaneous" till **"Talk continuous"**.
 >     - Byt "Wait for turn" till **"Take turns talking"**.
 > 3.  **Etiketter (Details):** Byt knappen "Select more details" till **"Press to view [more/less] details"** (dynamisk text).
+
+> **Användarens Önskemål (Uppdatering 3):**
+> 1.  **Host Admin:** Lägg till länken för "Meeting Host" längst ned i Details-panelen, under "Show System Metrics". Det ska öppna Host-vyn.
+> 2.  **System Metrics:** Lägg till en ljudspektrum-visare (Audio Spectrum Visualizer) för det ofiltrerade ljudet i System Metrics-panelen.
+
+> **Användarens Önskemål (Uppdatering 4):**
+> 1.  **Textjustering:** Byt "Talk continous" till "Talk continuously".
+
+> **Användarens Önskemål (Uppdatering 5):**
+> 1.  **Auto-minimera Details:** När man trycker på ett val inuti DETAILS-panelen ska den automatiskt minimeras (stängas) efter 1,5 sekunder.
 >
 > **AI Svar (Implementation):**
-> *   Jag uppdaterar \`constants/uiConstants.ts\` med de nya etiketterna.
-> *   Jag uppdaterar \`services/uiTranslationService.ts\` med motsvarande svenska översättningar.
-> *   Jag byter SVG-ikonerna i \`App.tsx\` (Footer) och \`ActiveSessionStep.tsx\` (Central Circle) till en klassisk högtalare med vågor.
-> *   Jag implementerar logik för "more/less" i Details-knappen.
+> *   Jag implementerar en \`useRef\` timer i \`App.tsx\` som startar en nedräkning på 1500ms när ett val görs.
+> *   Om användaren gör ett nytt val inom tiden, återställs timern (debounce).
+> *   Panelen stängs genom att sätta \`setIsDetailsExpanded(false)\`.
 `;

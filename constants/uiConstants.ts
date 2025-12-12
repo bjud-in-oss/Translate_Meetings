@@ -5,7 +5,7 @@ export const DEFAULT_UI_TEXT: UIText = {
   dashboard: {
     yourLanguageLabel: "What is your language?",
     modeLabel: "When should the translator talk?",
-    modeSimultaneous: "Talk continuous",
+    modeSimultaneous: "Talk continuously",
     modeTakeTurns: "Take turns talking",
     tempoLabel: "Tempo & Style",
     tempoStandard: "Standard",

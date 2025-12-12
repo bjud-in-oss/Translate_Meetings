@@ -1,5 +1,6 @@
 
 import React from 'react';
+import AudioVisualizer from './AudioVisualizer';
 
 interface SimultaneousDashboardProps {
   rms: number;           
@@ -15,6 +16,7 @@ interface SimultaneousDashboardProps {
   lagTrend: 'STABLE' | 'RISING' | 'FALLING';
   onTogglePause: () => void;
   aiEfficiency: number;
+  analyser?: AnalyserNode | null; // Added analyser prop
 }
 
 const SimultaneousDashboard: React.FC<SimultaneousDashboardProps> = ({
@@ -27,7 +29,8 @@ const SimultaneousDashboard: React.FC<SimultaneousDashboardProps> = ({
   totalLag,
   lagTrend,
   onTogglePause,
-  aiEfficiency
+  aiEfficiency,
+  analyser
 }) => {
 
   // Spiral Visualization Logic
@@ -187,8 +190,21 @@ const SimultaneousDashboard: React.FC<SimultaneousDashboardProps> = ({
 
       </div>
 
+      {/* SPECTRUM ANALYZER (Unfiltered Input) */}
+      <div className="mb-2">
+          <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-1 flex items-center justify-between">
+              <span>UNFILTERED INPUT SPECTRUM</span>
+              {analyser ? <span className="text-green-500">ACTIVE</span> : <span className="text-slate-600">IDLE</span>}
+          </div>
+          <AudioVisualizer 
+              isActive={!!analyser} 
+              isMuted={false} 
+              analyser={analyser || undefined} 
+          />
+      </div>
+
       {/* INSPECTOR */}
-      <div className="border-t border-slate-700/50 bg-slate-900/50 mt-4 pt-3 flex items-center justify-between">
+      <div className="border-t border-slate-700/50 bg-slate-900/50 mt-2 pt-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
               <span className={`w-1.5 h-1.5 rounded-full ${trafficLight === 'TALK' || isUploading ? 'bg-cyan-500 animate-pulse' : 'bg-slate-600'}`}></span>
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">STATUS</span>

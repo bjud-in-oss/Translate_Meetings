@@ -8,6 +8,7 @@ import SpeakerSelector from './components/SpeakerSelector';
 import SpecEditor from './components/SpecEditor';
 import TranslationOverlay from './components/TranslationOverlay';
 import TranscriptView from './components/TranscriptView';
+import HostAdminStep from './components/steps/HostAdminStep';
 import { useAudioSession } from './hooks/useAudioSession';
 import { DEFAULT_UI_TEXT } from './constants/uiConstants';
 import { uiTranslationService } from './services/uiTranslationService';
@@ -27,6 +28,7 @@ const App: React.FC = () => {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
   const [showTranscription, setShowTranscription] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
+  const [isHostAdminOpen, setIsHostAdminOpen] = useState(false);
   
   const [uiText, setUiText] = useState<UIText>(DEFAULT_UI_TEXT);
   const [isTranslatingUI, setIsTranslatingUI] = useState(false);
@@ -34,6 +36,9 @@ const App: React.FC = () => {
   // Debug & Spec Editor State
   const [isSpecEditorOpen, setIsSpecEditorOpen] = useState(false);
   const [gatewayStatus, setGatewayStatus] = useState<GatewayStatus>('DISCONNECTED');
+
+  // Auto-close Timer Ref
+  const detailsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
       connectionState,
@@ -88,6 +93,21 @@ const App: React.FC = () => {
      initBrowserLang();
   }, []);
 
+  // --- Helpers ---
+
+  const autoCloseDetails = () => {
+      if (detailsCloseTimerRef.current) clearTimeout(detailsCloseTimerRef.current);
+      detailsCloseTimerRef.current = setTimeout(() => {
+          setIsDetailsExpanded(false);
+      }, 1500);
+  };
+
+  const toggleDetails = () => {
+      // If user toggles manually, clear any pending auto-close to avoid surprise closing
+      if (detailsCloseTimerRef.current) clearTimeout(detailsCloseTimerRef.current);
+      setIsDetailsExpanded(!isDetailsExpanded);
+  };
+
   // --- Handlers ---
 
   const handleLanguageSelect = async (lang: Language) => {
@@ -135,6 +155,16 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden">
       <audio ref={audioOutputElRef} className="hidden" />
       <TranslationOverlay isVisible={isTranslatingUI} message={uiText.loadingOverlay.translating} />
+
+      {/* Host Admin Modal */}
+      {isHostAdminOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in">
+              <HostAdminStep 
+                  uiText={uiText.hostStep} 
+                  onBack={() => setIsHostAdminOpen(false)} 
+              />
+          </div>
+      )}
 
       <Header 
           isConnected={isLive || connectionState === 'SLEEP'} 
@@ -214,7 +244,7 @@ const App: React.FC = () => {
         <div className="w-full z-10 mb-4 animate-fade-in">
             <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block text-center mb-2">Details</label>
             <button 
-                onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                onClick={toggleDetails}
                 className="w-full flex items-center justify-center relative bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 hover:bg-slate-800 transition-colors group"
             >
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover:text-white">
@@ -243,7 +273,7 @@ const App: React.FC = () => {
                                 {(['standard', 'fast', 'presentation'] as TranslationTempo[]).map(tempo => (
                                     <button
                                         key={tempo}
-                                        onClick={() => setSelectedTempo(tempo)}
+                                        onClick={() => { setSelectedTempo(tempo); autoCloseDetails(); }}
                                         className={`py-2 rounded-md text-[10px] font-bold transition-all capitalize ${selectedTempo === tempo ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
                                         {tempo}
@@ -254,11 +284,27 @@ const App: React.FC = () => {
 
                         {/* Audio Config */}
                         <div className="space-y-3 pt-2 border-t border-slate-700/50">
-                            <MicrophoneSelector selectedDeviceId={selectedMicId} onSelect={setSelectedMicId} disabled={false} label={uiText.dashboard.micLabel} />
+                            <MicrophoneSelector 
+                                selectedDeviceId={selectedMicId} 
+                                onSelect={(id) => { setSelectedMicId(id); autoCloseDetails(); }} 
+                                disabled={false} 
+                                label={uiText.dashboard.micLabel} 
+                            />
                             {(selectedMode === TranslationMode.SIMULTANEOUS || selectedTempo === 'fast') && (
-                                <MicrophoneSelector selectedDeviceId={selectedTriggerMicId} onSelect={setSelectedTriggerMicId} disabled={false} optional={true} label={uiText.dashboard.triggerLabel} />
+                                <MicrophoneSelector 
+                                    selectedDeviceId={selectedTriggerMicId} 
+                                    onSelect={(id) => { setSelectedTriggerMicId(id); autoCloseDetails(); }} 
+                                    disabled={false} 
+                                    optional={true} 
+                                    label={uiText.dashboard.triggerLabel} 
+                                />
                             )}
-                            <SpeakerSelector selectedDeviceId={selectedSpeakerId} onSelect={setSelectedSpeakerId} disabled={false} label={uiText.dashboard.speakerLabel} />
+                            <SpeakerSelector 
+                                selectedDeviceId={selectedSpeakerId} 
+                                onSelect={(id) => { setSelectedSpeakerId(id); autoCloseDetails(); }} 
+                                disabled={false} 
+                                label={uiText.dashboard.speakerLabel} 
+                            />
                         </div>
                     </div>
 
@@ -268,7 +314,7 @@ const App: React.FC = () => {
                             <input 
                                 type="checkbox" 
                                 checked={showTranscription} 
-                                onChange={(e) => setShowTranscription(e.target.checked)}
+                                onChange={(e) => { setShowTranscription(e.target.checked); autoCloseDetails(); }}
                                 className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-cyan-600 focus:ring-cyan-500" 
                             />
                             <span className="text-xs text-slate-400 font-bold">{uiText.dashboard.textModeLabel}</span>
@@ -278,11 +324,21 @@ const App: React.FC = () => {
                             <input 
                                 type="checkbox" 
                                 checked={showMetrics} 
-                                onChange={(e) => setShowMetrics(e.target.checked)}
+                                onChange={(e) => { setShowMetrics(e.target.checked); autoCloseDetails(); }}
                                 className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-cyan-600 focus:ring-cyan-500" 
                             />
                             <span className="text-xs text-slate-400 font-bold">Show System Metrics</span>
                         </label>
+
+                        {/* Host Admin Link */}
+                        <div className="pt-4 flex justify-center">
+                            <button 
+                                onClick={() => setIsHostAdminOpen(true)}
+                                className="text-[10px] text-slate-600 hover:text-cyan-500 transition-colors uppercase tracking-widest font-bold flex items-center gap-1"
+                            >
+                                <span className="opacity-50">🛡️</span> Meeting Host
+                            </button>
+                        </div>
                     </div>
                     
                 </div>
@@ -313,6 +369,7 @@ const App: React.FC = () => {
                         totalLag={totalLag}
                         lagTrend={lagTrend}
                         onTogglePause={togglePause}
+                        analyser={analyserRef.current} // Pass Analyser for Spectrum
                     />
 
                     {/* THE MATRIX (Merged, No Header) */}
