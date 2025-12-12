@@ -4,5 +4,3 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Detta hjälper ibland att tysta varningar om API-nycklar i koden
-  CI = "false"
