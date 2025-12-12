@@ -1,4 +1,5 @@
 
+
 export const PLAN_MD = `# Vision för appen
 Min vision som du kallar den (det är ett bra namn) nedan är kanske så omfattande att den är svår att hantera. Men låt oss bryta ned den stycke för stycke.
 
@@ -240,4 +241,21 @@ Men du kan spara två hela versioner av varje fil. Tidigare versionen och den ä
 > *   Jag implementerar en \`useRef\` timer i \`App.tsx\` som startar en nedräkning på 1500ms när ett val görs.
 > *   Om användaren gör ett nytt val inom tiden, återställs timern (debounce).
 > *   Panelen stängs genom att sätta \`setIsDetailsExpanded(false)\`.
+
+### Fix: env.d.ts & Process Types
+**Viktig lärdom för framtiden:**
+
+Jag har analyserat problemet med "Cannot find name 'process'". Felet uppstår för att process inte är deklarerad globalt.
+Det tidigare försöket att ta bort deklarationen (för att undvika krockar) gick för långt och raderade den helt.
+
+**Lösningen:**
+För att få det att fungera både med och utan @types/node (vilket verkar variera i olika miljöer) ska vi deklarera process men använda typen NodeJS.Process som vi själva definierar (och som automatiskt slås ihop/mergas med @types/node om det finns). På så sätt är deklarationen identisk i båda fallen och TypeScript klagar inte.
+
+Kodexempel för \`env.d.ts\`:
+\`\`\`ts
+  // Declare process globally using the NodeJS.Process type
+  // This declaration matches @types/node's declaration, preventing "redeclaration" errors
+  // while ensuring 'process' exists when types are missing.
+  var process: NodeJS.Process;
+\`\`\`
 `;

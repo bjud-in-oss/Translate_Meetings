@@ -64,9 +64,12 @@ export class GeminiLiveService {
         } else if (mode === TranslationMode.SIMULTANEOUS) {
           systemInstruction = `${baseInstruction}
           
-          MODE: SIMULTANEOUS (STREAMING)
-          - You are working in a HALF-DUPLEX setup. You receive audio in BURSTS.
-          - Translate the burst you received immediately. Do not wait for more context.`;
+          MODE: SIMULTANEOUS (SEMI-DUPLEX STREAMING)
+          - You are working in a SEMI-TRUE MULTI-DUPLEX dialog setup.
+          - Your goal is to keep the flow moving. Do not wait for long pauses.
+          - Translate short bursts immediately as you understand them.
+          - Keep output CONCISE and DIRECT to minimize latency.
+          - If the speakers overlap, prioritize the dominant voice but try to capture the essence.`;
         }
 
         // 2. TEMPO INSTRUCTIONS (Style)
