@@ -204,77 +204,31 @@ Men du kan spara två hela versioner av varje fil. Tidigare versionen och den ä
 # Senaste Designändringar (Iterativ)
 
 > **Användarens Önskemål:**
-> 1.  **Layout:** Byt plats på boxarna i "Mode Selection" så att "Simultaneous" (default) är till vänster/överst.
-> 2.  **Navigation:** Sidan måste vara scrollbar vertikalt så att dolda element (som sub-options) går att nå.
-> 3.  **SpecEditor:** Alla filer (inte bara nya) måste kunna döpas om och raderas.
-> 4.  **Buggrapport:** Språkväxling fungerar inte alltid stabilt. Båda språken hamnar i samma buffer.
-> 5.  **Fil-Organisering:** Önskemål om att AI:n automatiskt ska sortera och skapa hierarkiska underdomän-filer för att spara tokens och organisera arbetet bättre.
+> 1.  **Namnbyte:** Appen heter nu "Meeting Translator" (tidigare MeetingBridge).
+> 2.  **Språkval:** Etikett "What is your language?".
+> 3.  **Modes:** 
+>     - Etikett "When should the translator talk?".
+>     - Alternativ: "Simultaneous" (Oförändrad), "Wait for turn" (fd Take Turns).
+>     - Layout: Knapparna ska ha samma stil som den valda språk-dropdownen (Grå bakgrund, vit text, inramning, hover-effekt).
+> 4.  **Details:** Knapptext "Select more details". Rubrik ovanför "Details".
+> 5.  **Prestanda:** Svenska och Engelska texter ska vara hårdkodade (ingen API-översättning).
+> 6.  **Ikoner:** Ersätt mikrofon-ikonen med en Högtalar-ikon i huvudknappen.
+> 7.  **Mute-logik:**
+>     - Startskärm: Text "PRESS TO UNMUTE".
+>     - Manuell Mute: Stänger av ALLT (Mic + Speaker) omedelbart. Inget "Smart Standby/Auto-Wake".
+>     - Auto-Mute: Auto-wake ska endast ske om systemet själv gått ner i vila (Auto-standby), inte vid manuellt stopp.
+> 8.  **Auto-Standby:** Inför en timer (t.ex. 60s tystnad) som sätter systemet i Sleep-läge där VAD kan väcka det.
 
-> **Teknisk Analys (Modes vs Styles):**
-> Du frågade om skillnaden mellan "Standard/Faster/Presentation" och om de kan kombineras med Simultaneous/Conversational.
->
-> *   **Simultaneous (Mode):** Detta är en *teknisk arkitektur*. Appen buffrar ljud i 4-6 sekunder, analyserar det, och skickar det i "paket". Detta krävs för att hinna översätta medan talaren fortsätter prata (Half-Duplex).
-> *   **Conversational (Mode):** Detta är en annan arkitektur ("Dialog"). Appen väntar på tystnad (Turn-complete) innan den översätter.
-> *   **Standard/Faster/Presentation (Styles):** Dessa är *instruktioner* (Prompts) till AI:n om *hur* den ska formulera sig (korta meningar, skuggning, etc).
-> *   **Via Text (Legacy):** Detta är en tredje arkitektur (Ladda upp fil -> Transkribera -> Översätt -> TTS). Den är långsam men exakt.
->
-> *Slutsats:* Du har helt rätt i att "Text" egentligen är en *metod* som kan appliceras på både dialog och presentation. Men "Simultaneous" (buffring) är tekniskt oförenligt med "Conversational" (vänta på tystnad). Därför är de separata huvudval. Vi behåller uppdelningen tills vidare men justerar layouten.
-
-> **Analys av Session Management (Live API):**
-> Du delade dokumentation om Gemini Live API Session Management. Här är en gap-analys mot nuvarande implementation:
->
-> 1.  **Session Lifetime:**
->     *   **Regel:** Audio-only sessioner stänger efter 15 minuter. Connection stänger efter ~10 min.
->     *   **Status:** Appen hanterar idag inte automatisk återanslutning ("Session Resumption") eller kontext-komprimering. En predikan på 45 minuter kommer att avbrytas.
-> 2.  **Session Resumption:**
->     *   **Lösning:** Vi måste implementera \`sessionResumption\` i config och spara \`newHandle\` när vi får \`sessionResumptionUpdate\`.
-> 3.  **GoAway:**
->     *   **Lösning:** Vi måste lyssna på \`GoAway\`-meddelandet för att veta när servern tänker stänga ner, och då initiera en återanslutning.
->
-> *Plan:* Jag lägger in detta som **FAS 4: ROBUSTHET (Long-Running Sessions)** i planen. Det kräver en omskrivning av \`GeminiLiveService\` för att stödja "Hot Swapping" av sessioner utan att tappa ljud.
-> 
-> Stämmer det att vi gjorde en lösning som startar om översättningen, men ovan lösning är den egentliga lösningen och inte symptombehandling?
-> 
-> **AI Svar:** Helt korrekt. Vår nuvarande metod (i Fas 1-3) är reaktiv: vi väntar på att kopplingen dör (\`onClose\`) och låter sedan användaren (eller VAD) väcka den igen ("Sleep Mode"). Detta ger ett litet avbrott. **GoAway**-metoden är proaktiv: servern varnar oss *innan* den dör, så vi kan byta koppling i farten ("Hot Swap") utan att användaren märker det. Det är skillnaden mellan att starta om bilen när den fått motorstopp vs att tanka i farten.
-
-> **Användarens Önskemål (Host & Källspråk):**
-> *   **Host/Värd:** Återinför "Meeting Host"-rollen (Admin-vy) så man kan styra rum.
-> *   **Acoustic Environment:** Sätt "Large Group" som standardval.
-> *   **Navigation:** Flytta "Quick Start" till guiden så att alla steg har en "Start"-knapp (som hoppar direkt till sessionen med defaults).
-> *   **Källspråk (Task 8):** Utvärdera om vi kan skippa denna.
->
-> **AI Svar (Analys):**
-> *   **Källspråk:** Du har rätt. I en MeetingBridge-miljö (Fas 6) vet vi källspråket baserat på kanalen. I en single-web-app miljö kan vi anta att "Your Language" är målspråket och att input är "Rummet" (oftast Svenska). Vi nedprioriterar Task 8 och fokuserar på integrationen.
-> *   **Quick Start:** Jag lägger till en delad knapp ("Start Now") i varje steg av guiden. Detta gör att man snabbt kan komma igång oavsett var man är i processen.
->
-> **Uppdatering: Source Language Switch (Hot Swap)**
-> *   **Förfrågan:** Användaren vill kunna byta språk *utan* att tömma ljudbufferten, så att den föregående meningen får pratas klart.
-> *   **Lösning:** Vi implementerar nu \`switchLanguage\` i \`useAudioSession\`. Denna funktion stänger ner Gemini-sessionen och startar en ny med det nya språket, men låter Web Audio Context (Output) fortsätta spela upp sin kö. Detta ger en sömlös övergång där meningen avslutas i det gamla språket medan det nya börjar buffras. UI uppdateras med en drop-down i headern under sessionen.
-
-> **Användarens Önskemål:** "Kan du göra en återställningspunkt?"
->
-> **AI Svar:** Absolut. Jag har förtydligat och förstärkt funktionen för detta i SpecEditor.
-> 1.  **UI:** Knappen "Sync Ref" heter nu **"Create Restore Point"** och är grön/tydlig.
-> 2.  **Funktion:** När du trycker på den sparas inte bara referensen i databasen, utan en **backup-fil laddas automatiskt ner** till din hårddisk.
-> Detta garanterar att du har en fysisk återställningspunkt ("Checkpoint") för nuvarande kodläge.
-
-> **Användarens Önskemål (Buggar):** 
-> 1. iOS: "Surr" efter uppspelning. 
-> 2. Android: Tyst uppspelning. 
-> 3. Språkväxling: Fungerar inte (svarar inte).
->
-> **AI Svar (Fix):**
-> *   **Mobilt ljud:** Implementerat en koll för \`setSinkId\`. På iOS/Android (där detta saknas) kopplar vi nu ljudet direkt till \`destination\` istället för via en \`MediaStream\`-brygga. Detta löser både surret (iOS) och tystnaden (Android).
-> *   **Språkväxling:** Återställt funktionen till att byta **omedelbart** istället för att vänta på tystnad. Detta gör knappen responsiv igen.
-
-> **Användarens Önskemål (Transkribering & Uppstädning):**
-> 1.  **Text Mode:** Få "Use Text Mode" att fungera på riktigt (integrerat i flödet), utan PIN-kod och utan "Polished" specialläge.
-> 2.  **Visning:** Texten ska "rulla" fram (strömmande) parallellt med ljudet.
-> 3.  **UI:** "Change tempo..." ska heta "Details". Lägg till varning för Gateway i metrics.
+> **Användarens Önskemål (Uppdatering 2):**
+> 1.  **Ikoner (Klassisk Högtalare):** Byt ut alla ljud/mikrofon-ikoner i "Active Session" (både footer och centralsymbolen) till en klassisk, tydlig högtalarsymbol (med kon). Den ska synas tydligt under det röda strecket vid mute.
+> 2.  **Etiketter (Modes):**
+>     - Byt "Simultaneous" till **"Talk continuous"**.
+>     - Byt "Wait for turn" till **"Take turns talking"**.
+> 3.  **Etiketter (Details):** Byt knappen "Select more details" till **"Press to view [more/less] details"** (dynamisk text).
 >
 > **AI Svar (Implementation):**
-> *   **Transkribering:** Implementerat \`inputAudioTranscription\` och \`outputAudioTranscription\` i Gemini Live config. Texten visas nu i pratbubblor som uppdateras i realtid (Draft -> Final).
-> *   **Prestanda:** Transkribering är *valfritt* (checkbox). Om den inte är vald skickas inte konfigurationen, vilket sparar resurser.
-> *   **Städning:** Tog bort all kod relaterad till "Polished Mode" och PIN-lås.
-> *   **Gateway Varning:** System Metrics visar nu en röd, pulserande varning: "⚠️ GATEWAY DISCONNECTED - CHECK SERVER" om kopplingen saknas.
+> *   Jag uppdaterar \`constants/uiConstants.ts\` med de nya etiketterna.
+> *   Jag uppdaterar \`services/uiTranslationService.ts\` med motsvarande svenska översättningar.
+> *   Jag byter SVG-ikonerna i \`App.tsx\` (Footer) och \`ActiveSessionStep.tsx\` (Central Circle) till en klassisk högtalare med vågor.
+> *   Jag implementerar logik för "more/less" i Details-knappen.
 `;

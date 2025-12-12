@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, Modality, GenerateContentResponse } from '@google/genai';
 import { Language } from '../types';
 
@@ -47,8 +45,10 @@ export class PolishedService {
   private readonly COOLDOWN_MS = 2000;
 
   constructor() {
-    // @ts-ignore
     const apiKey = process.env.API_KEY as string;
+    if (!apiKey) {
+        console.error("MISSING API KEY: Please set API_KEY in your environment variables.");
+    }
     this.ai = new GoogleGenAI({ apiKey });
   }
 

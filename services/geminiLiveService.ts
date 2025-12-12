@@ -1,6 +1,3 @@
-
-
-
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { Language, TranslationMode, TranslationTempo } from '../types';
 import { storageService } from './storageService';
@@ -12,8 +9,10 @@ export class GeminiLiveService {
   private isConnecting: boolean = false;
   
   constructor() {
-    // @ts-ignore: process.env.API_KEY is injected by the environment
     const apiKey = process.env.API_KEY as string;
+    if (!apiKey) {
+        console.error("MISSING API KEY: Please set API_KEY in your environment variables.");
+    }
     this.ai = new GoogleGenAI({ apiKey });
   }
 

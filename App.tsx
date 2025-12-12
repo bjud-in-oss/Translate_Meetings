@@ -72,9 +72,10 @@ const App: React.FC = () => {
   useEffect(() => {
      const initBrowserLang = async () => {
          const detectedLang = getLanguageFromBrowser();
-         if (detectedLang && detectedLang !== Language.ENGLISH) {
+         if (detectedLang) {
              setIsTranslatingUI(true);
              try {
+                // If it's Swedish, it will return hardcoded immediately. English returns base. Others use API.
                 const translated = await uiTranslationService.translateUI(detectedLang, DEFAULT_UI_TEXT);
                 setUiText(translated);
              } catch(e) {
@@ -114,9 +115,8 @@ const App: React.FC = () => {
 
   const handleToggleLive = async () => {
       if (isLive) {
-          // Go to Smart Standby (Mute)
-          await endSession(false); // false = SLEEP (Standby)
-          // Do not auto-collapse configs, let user control it
+          // MANUAL MUTE: Go to Full Stop/Disconnect (No Auto-Wake)
+          await endSession(true); 
       } else {
           // Go Live (Unmute)
           await startSession(
@@ -174,13 +174,21 @@ const App: React.FC = () => {
             <div className="flex justify-center gap-3">
                 <button
                     onClick={() => handleModeSelect(TranslationMode.SIMULTANEOUS)}
-                    className={`flex-1 py-4 px-2 rounded-xl font-bold transition-all shadow-lg text-lg ${selectedMode === TranslationMode.SIMULTANEOUS ? 'bg-slate-700 text-white border border-slate-600' : 'bg-slate-800/50 text-slate-400 border border-transparent hover:bg-slate-800'}`}
+                    className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all shadow-lg text-lg flex items-center justify-center ${
+                        selectedMode === TranslationMode.SIMULTANEOUS 
+                        ? 'bg-slate-800/80 border-2 border-slate-600 text-white ring-2 ring-cyan-500/50' 
+                        : 'bg-slate-800/50 text-slate-400 border border-transparent hover:bg-slate-700'
+                    }`}
                 >
                     {uiText.dashboard.modeSimultaneous}
                 </button>
                 <button
                     onClick={() => handleModeSelect(TranslationMode.SEQUENTIAL)}
-                    className={`flex-1 py-4 px-2 rounded-xl font-bold transition-all shadow-lg text-lg ${selectedMode === TranslationMode.SEQUENTIAL ? 'bg-slate-700 text-white border border-slate-600' : 'bg-slate-800/50 text-slate-400 border border-transparent hover:bg-slate-800'}`}
+                    className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all shadow-lg text-lg flex items-center justify-center ${
+                        selectedMode === TranslationMode.SEQUENTIAL 
+                        ? 'bg-slate-800/80 border-2 border-slate-600 text-white ring-2 ring-cyan-500/50' 
+                        : 'bg-slate-800/50 text-slate-400 border border-transparent hover:bg-slate-700'
+                    }`}
                 >
                     {uiText.dashboard.modeTakeTurns}
                 </button>
@@ -204,11 +212,14 @@ const App: React.FC = () => {
 
         {/* 3. DETAILS ACCORDION */}
         <div className="w-full z-10 mb-4 animate-fade-in">
+            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block text-center mb-2">Details</label>
             <button 
                 onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
                 className="w-full flex items-center justify-center relative bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 hover:bg-slate-800 transition-colors group"
             >
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover:text-white">Details</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover:text-white">
+                    Press to view {isDetailsExpanded ? 'less' : 'more'} details
+                </span>
                 <div className="absolute right-4">
                     <svg 
                         className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${isDetailsExpanded ? 'rotate-180' : ''}`} 
@@ -339,7 +350,7 @@ const App: React.FC = () => {
                 {/* THE ROUND BUTTON */}
                 <button
                     onClick={handleToggleLive}
-                    title={isLive ? "Mute (Standby)" : "Go Live"}
+                    title={isLive ? "Stop (Manual Mute)" : "Start (Unmute)"}
                     className={`relative w-24 h-24 rounded-full flex items-center justify-center outline-none will-change-transform transition-all duration-300 border-4 shadow-2xl ${
                         isLive 
                         ? 'bg-slate-900 border-cyan-500/50 shadow-cyan-500/20' 
@@ -351,15 +362,20 @@ const App: React.FC = () => {
                 >
                     {/* Inner content */}
                     <div className="relative z-20">
-                        {/* MICROPHONE ICON */}
-                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-10 w-10 transition-colors duration-300 ${isLive ? 'text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                            
-                            {/* RED SLASH (Visible when Muted / Standby) */}
-                            {!isLive && (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4l16 16" className="text-red-500/70" />
-                            )}
+                        {/* CLASSIC SPEAKER ICON (Replaces Abstract Sound/Mic) */}
+                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-10 w-10 transition-colors duration-300 ${isLive ? 'text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06z" />
+                            <path d="M15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
                         </svg>
+                        
+                        {/* RED SLASH (Visible when Muted / Standby) */}
+                        {!isLive && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <svg className="h-12 w-12 text-red-500/80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <line x1="4" y1="4" x2="20" y2="20" strokeWidth="2.5" strokeLinecap="round" />
+                                </svg>
+                            </div>
+                        )}
                     </div>
                     
                     {/* Ripples when Live */}
@@ -372,7 +388,7 @@ const App: React.FC = () => {
                 </button>
 
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-2">
-                    {isLive ? 'LIVE' : 'MUTED'}
+                    {isLive ? 'LIVE' : uiText.dashboard.statusPaused}
                 </span>
           </div>
       </footer>

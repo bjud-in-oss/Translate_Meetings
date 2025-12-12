@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({
           </svg>
         </div>
         <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight leading-none">MeetingBridge <span className="font-light text-cyan-400">Live</span></h1>
+            <h1 className="text-xl font-bold tracking-tight leading-none">Meeting <span className="font-light text-cyan-400">Translator</span></h1>
         </div>
       </div>
 

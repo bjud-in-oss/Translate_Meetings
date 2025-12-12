@@ -1,6 +1,4 @@
 
-
-
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { LiveServerMessage } from '@google/genai';
 import { Language, TranslationMode, TranslationTempo, INPUT_SAMPLE_RATE, OUTPUT_SAMPLE_RATE, TranscriptItem } from '../types';
@@ -63,6 +61,7 @@ export const useAudioSession = () => {
     const aiSpeechDebounceTimerRef = useRef<any>(null);
     const silenceStreamIntervalRef = useRef<any>(null);
     const autoRotateTimerRef = useRef<any>(null); 
+    const autoStandbyTimerRef = useRef<any>(null);
     const isUploadingRef = useRef<boolean>(false);
     const isInputMutedRef = useRef<boolean>(false); 
     const isMutexLockedRef = useRef<boolean>(false);
@@ -192,6 +191,7 @@ export const useAudioSession = () => {
         if (quickReleaseTimerRef.current) clearTimeout(quickReleaseTimerRef.current);
         if (aiSpeechDebounceTimerRef.current) clearTimeout(aiSpeechDebounceTimerRef.current);
         if (autoRotateTimerRef.current) clearTimeout(autoRotateTimerRef.current);
+        if (autoStandbyTimerRef.current) clearTimeout(autoStandbyTimerRef.current);
         stopSilenceStream();
 
         sourcesRef.current.forEach(source => { 
@@ -202,6 +202,12 @@ export const useAudioSession = () => {
             } catch(e) {} 
         });
         sourcesRef.current.clear();
+
+        // IMMEDIATE OUTPUT SILENCE
+        if (audioOutputElRef.current) {
+            audioOutputElRef.current.pause();
+            audioOutputElRef.current.srcObject = null;
+        }
 
         if (sessionRef.current) {
             try { await geminiService.disconnect(); } catch(e) {}
@@ -235,14 +241,12 @@ export const useAudioSession = () => {
                 try { await inputAudioContextRef.current.close(); } catch (e) {}
                 inputAudioContextRef.current = null;
             }
-            if (audioOutputElRef.current) {
-                audioOutputElRef.current.srcObject = null;
-            }
+            
             setInspectorMessage("Disconnected");
         } else {
             // Smart Standby (Muted but Listening for VAD)
             setConnectionState('SLEEP');
-            setInspectorMessage("Standby (Listening...)");
+            setInspectorMessage("Auto-Standby (Listening...)");
         }
 
         audioQueueRef.current = []; 
@@ -266,6 +270,16 @@ export const useAudioSession = () => {
         setIsAiSpeaking(false);
         setLiveTranscript([]); // Reset transcript on stop
     }, [stopSilenceStream]);
+
+    const resetAutoStandby = useCallback(() => {
+        if (autoStandbyTimerRef.current) clearTimeout(autoStandbyTimerRef.current);
+        if (connectionStateRef.current === 'CONNECTED') {
+            autoStandbyTimerRef.current = setTimeout(() => {
+                console.log("Auto-Standby triggered due to inactivity.");
+                stopAudio(false); // Enter Sleep Mode
+            }, 60000); // 60 seconds of silence -> Sleep
+        }
+    }, [stopAudio]);
 
     const togglePause = () => {
         setIsPaused(prev => !prev);
@@ -330,6 +344,7 @@ export const useAudioSession = () => {
                     setConnectionState('CONNECTED');
                     setInspectorMessage(`Swapped: ${newLang}`);
                     ignoreAudioResponseRef.current = false; 
+                    resetAutoStandby(); // Reset timer on successful swap
                 },
                 async (message: LiveServerMessage) => {
                     if (outputAudioContextRef.current) {
@@ -350,7 +365,7 @@ export const useAudioSession = () => {
             setInspectorMessage("Swap Error");
             stopAudio();
         }
-    }, [stopAudio]);
+    }, [stopAudio, resetAutoStandby]);
 
     const playRawAudio = async (audioData: Uint8Array, outputCtx: AudioContext, reportDuration?: number, mode?: TranslationMode) => {
         if (!outputCtx || outputCtx.state === 'closed') return; 
@@ -401,6 +416,7 @@ export const useAudioSession = () => {
                     isAiSpeakingRef.current = false; 
                     setInspectorMessage("AI Finished");
                     waitingForResponseRef.current = false;
+                    resetAutoStandby(); // Reset timer when AI finishes speaking
 
                     if (pendingLanguageRef.current) {
                          executeLanguageSwitch(pendingLanguageRef.current);
@@ -421,6 +437,9 @@ export const useAudioSession = () => {
         isAiSpeakingRef.current = true; 
         waitingForResponseRef.current = false;
         setInspectorMessage(`Translating... (${rate.toFixed(2)}x)`);
+        
+        // Reset standby timer whenever we play audio
+        if (autoStandbyTimerRef.current) clearTimeout(autoStandbyTimerRef.current);
     };
 
     const processAudioQueue = async (outputCtx: AudioContext) => {
@@ -524,6 +543,7 @@ export const useAudioSession = () => {
                 setLastBurstSize(bufferSizeChunks);
                 setInspectorMessage(`Sent ${bufferSizeChunks} chunks`);
                 localBufferRef.current = [];
+                resetAutoStandby(); // Activity detected, reset standby
 
                 if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
                 watchdogTimerRef.current = setTimeout(() => {
@@ -564,6 +584,7 @@ export const useAudioSession = () => {
          const inputTrans = message.serverContent?.inputTranscription?.text;
          if (inputTrans) {
              updateTranscript(inputTrans, 'user');
+             resetAutoStandby(); // User speech detected via transcription event
          }
          const outputTrans = message.serverContent?.outputTranscription?.text;
          if (outputTrans) {
@@ -577,7 +598,7 @@ export const useAudioSession = () => {
              if (quickReleaseTimerRef.current) clearTimeout(quickReleaseTimerRef.current);
              if (!isAiSpeakingRef.current) setInspectorMessage("Ready");
          }
-    }, [handleAudioChunk, stopSilenceStream]);
+    }, [handleAudioChunk, stopSilenceStream, resetAutoStandby]);
 
     const rotateSession = useCallback(async () => {
         if (connectionStateRef.current !== 'CONNECTED' || !lastConfigRef.current) return;
@@ -706,6 +727,7 @@ export const useAudioSession = () => {
                     setInspectorMessage("Listening...");
                     if (autoRotateTimerRef.current) clearTimeout(autoRotateTimerRef.current);
                     autoRotateTimerRef.current = setTimeout(rotateSession, 12 * 60 * 1000);
+                    resetAutoStandby(); // Start timer on connect
                 },
                 async (message: LiveServerMessage) => {
                     await handleGeminiMessage(message, outputCtx, selectedMode);
@@ -793,6 +815,7 @@ export const useAudioSession = () => {
                              if (localBufferRef.current.length === 0) localBufferRef.current.push(...lookbackBufferRef.current);
                              localBufferRef.current.push(chunk);
                              lowVolumeStartRef.current = 0;
+                             resetAutoStandby(); // Activity
                         } else {
                             if (localBufferRef.current.length > 0) {
                                 if (lowVolumeStartRef.current === 0) lowVolumeStartRef.current = now;
@@ -812,6 +835,7 @@ export const useAudioSession = () => {
                     } else if (isConnected) {
                          if (!isSuppressed) {
                             safeSend({ media: createPcmBlob(amplifiedData) });
+                            if (rms > 0.01) resetAutoStandby(); // Activity in conversational mode
                          }
                     }
                 };

@@ -204,6 +204,22 @@ Men du kan spara två hela versioner av varje fil. Tidigare versionen och den ä
 # Senaste Designändringar (Iterativ)
 
 > **Användarens Önskemål:**
+> 1.  **Namnbyte:** Appen heter nu "Meeting Translator" (tidigare MeetingBridge).
+> 2.  **Språkval:** Etikett "What is your language?".
+> 3.  **Modes:** 
+>     - Etikett "When should the translator talk?".
+>     - Alternativ: "Simultaneous" (Oförändrad), "Wait for turn" (fd Take Turns).
+>     - Layout: Knapparna ska ha samma stil som den valda språk-dropdownen (Grå bakgrund, vit text, inramning, hover-effekt).
+> 4.  **Details:** Knapptext "Select more details". Rubrik ovanför "Details".
+> 5.  **Prestanda:** Svenska och Engelska texter ska vara hårdkodade (ingen API-översättning).
+> 6.  **Ikoner:** Ersätt mikrofon-ikonen med en Högtalar-ikon i huvudknappen.
+> 7.  **Mute-logik:**
+>     - Startskärm: Text "PRESS TO UNMUTE".
+>     - Manuell Mute: Stänger av ALLT (Mic + Speaker) omedelbart. Inget "Smart Standby/Auto-Wake".
+>     - Auto-Mute: Auto-wake ska endast ske om systemet själv gått ner i vila (Auto-standby), inte vid manuellt stopp.
+> 8.  **Auto-Standby:** Inför en timer (t.ex. 60s tystnad) som sätter systemet i Sleep-läge där VAD kan väcka det.
+
+> **Användarens Önskemål (Tidigare):**
 > 1.  **Layout:** Byt plats på boxarna i "Mode Selection" så att "Simultaneous" (default) är till vänster/överst.
 > 2.  **Navigation:** Sidan måste vara scrollbar vertikalt så att dolda element (som sub-options) går att nå.
 > 3.  **SpecEditor:** Alla filer (inte bara nya) måste kunna döpas om och raderas.
@@ -250,3 +266,30 @@ Men du kan spara två hela versioner av varje fil. Tidigare versionen och den ä
 > **Uppdatering: Source Language Switch (Hot Swap)**
 > *   **Förfrågan:** Användaren vill kunna byta språk *utan* att tömma ljudbufferten, så att den föregående meningen får pratas klart.
 > *   **Lösning:** Vi implementerar nu \`switchLanguage\` i \`useAudioSession\`. Denna funktion stänger ner Gemini-sessionen och startar en ny med det nya språket, men låter Web Audio Context (Output) fortsätta spela upp sin kö. Detta ger en sömlös övergång där meningen avslutas i det gamla språket medan det nya börjar buffras. UI uppdateras med en drop-down i headern under sessionen.
+
+> **Användarens Önskemål:** "Kan du göra en återställningspunkt?"
+>
+> **AI Svar:** Absolut. Jag har förtydligat och förstärkt funktionen för detta i SpecEditor.
+> 1.  **UI:** Knappen "Sync Ref" heter nu **"Create Restore Point"** och är grön/tydlig.
+> 2.  **Funktion:** När du trycker på den sparas inte bara referensen i databasen, utan en **backup-fil laddas automatiskt ner** till din hårddisk.
+> Detta garanterar att du har en fysisk återställningspunkt ("Checkpoint") för nuvarande kodläge.
+
+> **Användarens Önskemål (Buggar):** 
+> 1. iOS: "Surr" efter uppspelning. 
+> 2. Android: Tyst uppspelning. 
+> 3. Språkväxling: Fungerar inte (svarar inte).
+>
+> **AI Svar (Fix):**
+> *   **Mobilt ljud:** Implementerat en koll för \`setSinkId\`. På iOS/Android (där detta saknas) kopplar vi nu ljudet direkt till \`destination\` istället för via en \`MediaStream\`-brygga. Detta löser både surret (iOS) och tystnaden (Android).
+> *   **Språkväxling:** Återställt funktionen till att byta **omedelbart** istället för att vänta på tystnad. Detta gör knappen responsiv igen.
+
+> **Användarens Önskemål (Transkribering & Uppstädning):**
+> 1.  **Text Mode:** Få "Use Text Mode" att fungera på riktigt (integrerat i flödet), utan PIN-kod och utan "Polished" specialläge.
+> 2.  **Visning:** Texten ska "rulla" fram (strömmande) parallellt med ljudet.
+> 3.  **UI:** "Change tempo..." ska heta "Details". Lägg till varning för Gateway i metrics.
+>
+> **AI Svar (Implementation):**
+> *   **Transkribering:** Implementerat \`inputAudioTranscription\` och \`outputAudioTranscription\` i Gemini Live config. Texten visas nu i pratbubblor som uppdateras i realtid (Draft -> Final).
+> *   **Prestanda:** Transkribering är *valfritt* (checkbox). Om den inte är vald skickas inte konfigurationen, vilket sparar resurser.
+> *   **Städning:** Tog bort all kod relaterad till "Polished Mode" och PIN-lås.
+> *   **Gateway Varning:** System Metrics visar nu en röd, pulserande varning: "⚠️ GATEWAY DISCONNECTED - CHECK SERVER" om kopplingen saknas.

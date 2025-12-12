@@ -3,10 +3,10 @@ import { UIText } from '../types';
 
 export const DEFAULT_UI_TEXT: UIText = {
   dashboard: {
-    yourLanguageLabel: "SELECT YOUR LANGUAGE",
-    modeLabel: "SELECT TRANSLATION MODE",
-    modeSimultaneous: "Simultaneous",
-    modeTakeTurns: "Take Turns",
+    yourLanguageLabel: "What is your language?",
+    modeLabel: "When should the translator talk?",
+    modeSimultaneous: "Talk continuous",
+    modeTakeTurns: "Take turns talking",
     tempoLabel: "Tempo & Style",
     tempoStandard: "Standard",
     tempoFast: "Fast",
@@ -19,7 +19,7 @@ export const DEFAULT_UI_TEXT: UIText = {
     statusReady: "Ready to Connect",
     statusListening: "Listening...",
     statusTranslating: "Translating...",
-    statusPaused: "Standby (Muted)",
+    statusPaused: "PRESS TO UNMUTE",
     buttonStart: "GO LIVE",
     buttonStop: "MUTE (STANDBY)"
   },
@@ -29,7 +29,7 @@ export const DEFAULT_UI_TEXT: UIText = {
   languageStep: {
     title: "Select Language",
     subtitle: "Choose the language you want to hear.",
-    yourLanguageLabel: "Your Language",
+    yourLanguageLabel: "What is your language?",
     nextButton: "Next"
   },
   modeStep: {
