@@ -1,0 +1,7 @@
+{
+  "name": "Morgonjusteringar Sekventiell översättning 11 dec buggfixad",
+  "description": "Semi-duplex real-time translator between Swedish and selectable languages using Gemini Live API.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
