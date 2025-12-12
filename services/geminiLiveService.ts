@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { Language, TranslationMode, TranslationTempo } from '../types';
 import { storageService } from './storageService';
@@ -9,11 +10,13 @@ export class GeminiLiveService {
   private isConnecting: boolean = false;
   
   constructor() {
-    const apiKey = process.env.API_KEY as string;
+    // Support both Vite env (Netlify) and process.env (AI Studio)
+    const apiKey = process.env.API_KEY;
+    
     if (!apiKey) {
-        console.error("MISSING API KEY: Please set API_KEY in your environment variables.");
+        console.error("MISSING API KEY");
     }
-    this.ai = new GoogleGenAI({ apiKey });
+    this.ai = new GoogleGenAI({ apiKey: apiKey as string });
   }
 
   async connect(

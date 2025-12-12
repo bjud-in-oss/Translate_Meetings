@@ -90,11 +90,11 @@ export class UITranslationService {
   private ai: GoogleGenAI;
 
   constructor() {
-    const apiKey = process.env.API_KEY as string;
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
-        console.error("MISSING API KEY: Please set API_KEY in your environment variables.");
+        console.error("MISSING API KEY.");
     }
-    this.ai = new GoogleGenAI({ apiKey });
+    this.ai = new GoogleGenAI({ apiKey: apiKey as string });
   }
 
   async translateUI(targetLanguage: Language, baseText: UIText): Promise<UIText> {
