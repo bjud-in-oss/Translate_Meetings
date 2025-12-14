@@ -137,12 +137,22 @@ export const useAudioSession = () => {
     }, []);
 
     const setupAudioContexts = useCallback(() => {
+        // Input Context: We still force 16k because we assume simple downsampling in ScriptProcessor,
+        // although robust logic should probably handle resampling from native rate.
+        // For now, keeping it fixed for VAD/Gemini compatibility unless specific input issues arise.
         if (!inputAudioContextRef.current || inputAudioContextRef.current.state === 'closed') {
             inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: INPUT_SAMPLE_RATE });
         }
+
+        // Output Context: CRITICAL IOS FIX
+        // Do NOT force sampleRate: OUTPUT_SAMPLE_RATE (24000) on the context itself.
+        // iOS Safari struggles with non-native sample rates, causing crackling/looping after a while.
+        // We let the browser choose the native rate (usually 44.1k or 48k).
+        // The AudioBuffer we create later will still be 24k (matching Gemini), and the browser will handle resampling naturally.
         if (!outputAudioContextRef.current || outputAudioContextRef.current.state === 'closed') {
-            outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: OUTPUT_SAMPLE_RATE });
+            outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         }
+        
         if (outputAudioContextRef.current) {
              mediaStreamDestRef.current = outputAudioContextRef.current.createMediaStreamDestination();
         }
@@ -658,7 +668,7 @@ export const useAudioSession = () => {
             lastConfigRef.current = { 
                 lang: selectedLanguage, 
                 mode: selectedMode, 
-                tempo: selectedTempo,
+                tempo: selectedTempo, 
                 micId: selectedMicId, 
                 triggerId: selectedTriggerMicId, 
                 spkId: selectedSpeakerId,
@@ -914,3 +924,4 @@ export const useAudioSession = () => {
         bufferLagFrames
     };
 };
+
