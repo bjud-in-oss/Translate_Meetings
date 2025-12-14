@@ -9,6 +9,7 @@ import SpecEditor from './components/SpecEditor';
 import TranslationOverlay from './components/TranslationOverlay';
 import TranscriptView from './components/TranscriptView';
 import HostAdminStep from './components/steps/HostAdminStep';
+import IOSWarning from './components/IOSWarning';
 import { useAudioSession } from './hooks/useAudioSession';
 import { DEFAULT_UI_TEXT } from './constants/uiConstants';
 import { uiTranslationService } from './services/uiTranslationService';
@@ -153,6 +154,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden">
+      <IOSWarning />
       <audio ref={audioOutputElRef} className="hidden" />
       <TranslationOverlay isVisible={isTranslatingUI} message={uiText.loadingOverlay.translating} />
 
@@ -460,3 +462,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
