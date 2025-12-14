@@ -656,6 +656,18 @@ export const useAudioSession = () => {
         enableTranscription: boolean
     ) => {
         try {
+            // FIX: Ylva-fix (Android Chrome Unmute Issue)
+            // 1. Setup & Resume Contexts IMMEDIATELY on user click (User Gesture).
+            // This prevents "Slow Unmute" and ensures audio can play.
+            setupAudioContexts(); 
+            
+            const inputCtx = inputAudioContextRef.current!;
+            const outputCtx = outputAudioContextRef.current!;
+
+            if (inputCtx.state === 'suspended') await inputCtx.resume();
+            if (outputCtx.state === 'suspended') await outputCtx.resume();
+            
+            // 2. Clear old session
             if (sessionRef.current) {
                 await geminiService.disconnect();
                 sessionRef.current = null;
@@ -663,7 +675,6 @@ export const useAudioSession = () => {
 
             isManuallyStoppedRef.current = false;
             requestWakeLock();
-            setupAudioContexts(); 
             
             lastConfigRef.current = { 
                 lang: selectedLanguage, 
@@ -674,12 +685,6 @@ export const useAudioSession = () => {
                 spkId: selectedSpeakerId,
                 enableTranscription
             };
-            
-            const inputCtx = inputAudioContextRef.current!;
-            const outputCtx = outputAudioContextRef.current!;
-
-            if (inputCtx.state === 'suspended') await inputCtx.resume();
-            if (outputCtx.state === 'suspended') await outputCtx.resume();
 
             let stream: MediaStream;
             let isGatewayAudio = selectedMicId === 'gateway';
@@ -690,17 +695,33 @@ export const useAudioSession = () => {
                 stream = gatewaySourceRef.current.stream;
                 const unsub = gatewayService.onAudio(handleGatewayAudio);
             } else {
-                const isWarmStart = streamRef.current && streamRef.current.active && processorRef.current;
+                // Ensure fresh stream on mobile to avoid dead-stream issues
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const isWarmStart = !isMobile && streamRef.current && streamRef.current.active && processorRef.current;
+                
                 if (!isWarmStart) {
                     const constraints: MediaStreamConstraints = { 
                         audio: {
                             deviceId: selectedMicId && selectedMicId !== 'default' ? { exact: selectedMicId } : undefined,
                             echoCancellation: true, 
                             noiseSuppression: true, 
-                            autoGainControl: true // HARDCODED: Large Group / AGC
+                            autoGainControl: true 
                         } 
                     };
-                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    } catch (permErr: any) {
+                         // FIX: Ylva-fix (Explicit Permission Error)
+                         // Android Chrome fails silently/throws if permission was previously denied.
+                         console.error("Mic Permission Failed", permErr);
+                         if (permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError') {
+                             alert("Mikrofonåtkomst nekad! \n\nDu måste tillåta mikrofonen i webbläsarens inställningar för att detta ska fungera. \n\n1. Klicka på hänglåset/ikonen i adressfältet.\n2. Klicka på 'Behörigheter' eller 'Inställningar'.\n3. Tillåt Mikrofon.\n4. Ladda om sidan.");
+                         } else {
+                             alert(`Mikrofonfel: ${permErr.message || "Kunde inte starta mikrofonen."}`);
+                         }
+                         throw permErr; // Stop execution
+                    }
                 } else {
                     stream = streamRef.current!;
                 }
@@ -924,4 +945,3 @@ export const useAudioSession = () => {
         bufferLagFrames
     };
 };
-
